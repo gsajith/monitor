@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  p(id="data")
+  script(type='text/javascript').
+    window.setInterval(function getData() {
+      var req = new XMLHttpRequest();
+      req.open("GET", "/reload");
+      req.onreadystatechange = function() {
+        if(req.readyState == 4) {
+          document.getElementById("data").innerHTML = req.responseText;
+        }       
+      }
+      req.send();
+      
+    }, 1000);
+  input(type="button", value="Reload", onclick="getData()")
