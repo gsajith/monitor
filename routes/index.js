@@ -51,9 +51,9 @@ function generatePage(cb) {
              trade = "Buy BTC";
           } else if (margin - 1 < -.01) {
              trade = "Buy ETH";
-          } else if (margin - 1 > .003) {
+          } else if (margin - 1 > .0017) {
              trade = "Light buy BTC";
-          } else if (margin - 1 < -.003) {
+          } else if (margin - 1 < -.0017) {
              trade = "Light buy ETH";
           }
           var retString = "<h1>GDAX Monitor</h1>";
@@ -66,9 +66,10 @@ function generatePage(cb) {
           retString = retString + "<p>Exc bid: " + exchangeBid.toFixed(5) + "</p>";
           retString = retString + "<p>Target: " + targetExchange.toFixed(5) + "</p>";
           retString = retString + "<p>Margin: " + margin + "</p>";
-          retString = retString + "<p>Profit: " + ((margin - 1) * 100).toFixed(5) + "%</p>";
+          var profit = ((margin - 1) * 100).toFixed(5);
+          retString = retString + "<p style='color:" + (profit < 0 ? "red" : "green") +"' >Profit: " + profit + "%</p>";
           if (trade != "False") {
-            retString = retString + "<p style='color: green; font-size: 80px;'>Trade: " + trade + "</p>";
+            retString = retString + "<p id='trading' style='color: green; font-size: 80px;'>Trade: " + trade + "</p>";
           } else {
             retString = retString + "<p>Trade: " + trade + "</p>";
           }
