@@ -1,0 +1,44 @@
+h1 #{title}
+p Last fetched: #{date}
+p BTC ask: $#{btcAsk}
+p BTC bid: $#{btcBid}
+p ETH ask: $#{ethAsk}
+p ETH bid: $#{ethBid}
+p Exc ask: #{exchangeAsk}
+p Exc bid: #{exchangeBid}
+p Target: #{target}
+p Margin: #{margin}
+if profit > 0.0
+  p.green Profit: #{profit}%
+else
+  p.red Profit: #{profit}%
+if trade == "False"
+  p Trade: #{trade}
+else
+  p.bigblue Trade: #{trade}
+br
+p LTC ask: $#{ltcAsk}
+p LTC bid: $#{ltcBid}
+p lExc ask: #{ltcExchangeAsk}
+p lExc bid: #{ltcExchangeBid}
+p lTarget: #{ltcTarget}
+p lMargin: #{ltcMargin}
+if ltcProfit > 0.0
+  p.green lProfit: #{ltcProfit}%
+else
+  p.red lProfit: #{ltcProfit}%
+if ltcTrade == "False"
+  p lTrade: #{ltcTrade}
+else
+  p.bigblue lTrade: #{ltcTrade} 
+p(id="data")
+script(type='text/javascript').
+  window.setInterval(function getData() {
+    var req = new XMLHttpRequest();
+    req.open("GET", "/reload");
+    req.onreadystatechange = function() {
+        document.getElementById("data").innerHTML = req.responseText;
+        console.log(req);
+    }       
+    req.send();
+  }, 1000);

@@ -7,10 +7,22 @@ block content
       var req = new XMLHttpRequest();
       req.open("GET", "/reload");
       req.onreadystatechange = function() {
-        if(req.readyState == 4) {
           document.getElementById("data").innerHTML = req.responseText;
-        }       
-      }
+          console.log(req);
+      }       
       req.send();
-      
     }, 1000);
+  style(type='text/css').
+    h1 {
+       color: #ff8833;
+    }
+    .red {
+       color: #ff0033;
+    }
+    .green {
+       color: #008800;
+    }
+    .bigblue {
+       color: blue;
+       font-size: 30px;
+    }
