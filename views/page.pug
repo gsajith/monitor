@@ -1,5 +1,5 @@
 h1 #{title}
-p Last fetched: #{date}
+p Current time: #{currentDate}
 p BTC ask: $#{btcAsk}
 p BTC bid: $#{btcBid}
 p ETH ask: $#{ethAsk}
@@ -7,11 +7,17 @@ p ETH bid: $#{ethBid}
 p Exc ask: #{exchangeAsk}
 p Exc bid: #{exchangeBid}
 p Target: #{target}
+p Target back: #{targetBack}
 p Margin: #{margin}
+p Margin back: #{marginBack}
 if profit > 0.0
   p.green Profit: #{profit}%
 else
   p.red Profit: #{profit}%
+if profitBack > 0.0
+  p.green Profit back: #{profitBack}%
+else
+  p.red Profit back: #{profitBack}%
 if trade == "False"
   p Trade: #{trade}
 else
@@ -22,23 +28,28 @@ p LTC bid: $#{ltcBid}
 p lExc ask: #{ltcExchangeAsk}
 p lExc bid: #{ltcExchangeBid}
 p lTarget: #{ltcTarget}
+p lTarget back: #{ltcTargetBack}
 p lMargin: #{ltcMargin}
+p lMargin back: #{ltcMarginBack}
 if ltcProfit > 0.0
   p.green lProfit: #{ltcProfit}%
 else
   p.red lProfit: #{ltcProfit}%
+if ltcProfitBack > 0.0
+  p.green lProfit back: #{ltcProfitBack}%
+else
+  p.red lProfit back: #{ltcProfitBack}%
 if ltcTrade == "False"
   p lTrade: #{ltcTrade}
 else
   p.bigblue lTrade: #{ltcTrade} 
+br
+p USD: $#{usdBalance}
+p BTC: #{btcBalance} = $#{btcValue}
+p ETH: #{ethBalance} = $#{ethValue}
+p LTC: #{ltcBalance} = $#{ltcValue}
+p Total: $#{totalValue}
+br
+p Balance log: 
+p #{balanceLog}
 p(id="data")
-script(type='text/javascript').
-  window.setInterval(function getData() {
-    var req = new XMLHttpRequest();
-    req.open("GET", "/reload");
-    req.onreadystatechange = function() {
-        document.getElementById("data").innerHTML = req.responseText;
-        console.log(req);
-    }       
-    req.send();
-  }, 1000);

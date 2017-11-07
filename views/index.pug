@@ -8,10 +8,9 @@ block content
       req.open("GET", "/reload");
       req.onreadystatechange = function() {
           document.getElementById("data").innerHTML = req.responseText;
-          console.log(req);
       }       
       req.send();
-    }, 1000);
+    }, 200);
   style(type='text/css').
     h1 {
        color: #ff8833;
