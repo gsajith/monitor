@@ -47,7 +47,7 @@ const ETH_BTC = 2;
 const BTC_LTC = 3;
 const LTC_BTC = 4;
 const BTC_TO_ETH_MARGIN = 0.0010;
-const ETH_TO_BTC_MARGIN = -0.0072;
+const ETH_TO_BTC_MARGIN = -0.0050;
 
 const MIN_BALANCE_USD = 5.00;
 const MIN_BALANCE_CRYPTO = 0.01;
@@ -69,105 +69,133 @@ var cancelAllTimeout = [-1, 0];
 var getAllFillsIntervalCode;
 const PROCESS_FILLS_INTERVAL = 2222;
 
+
+
+
+ws.on('open', function open() {
+  ws.send(JSON.stringify(subMsg));
+  setTimeout(() => {
+    ws.send(JSON.stringify(subMsg));
+  }, 2000);
+});
+
+ws.on('message', function incoming(data) {
+  data = JSON.parse(data);
+  if (data['type'] === 'subscriptions') {
+    checkSubscriptions(data["channels"][0]["product_ids"].toString().split(','));
+  } else if (data['type'] === 'snapshot') {
+    updateSnapshot(data, VAR_MAP[data['product_id']]);
+  } else if (data['type'] === 'l2update') {
+    updateChanges(data['changes'], VAR_MAP[data['product_id']]);
+  }
+});
+ws.on('error', function incoming(err) {
+  logBig(err);
+});
+
+authedClient.getAccounts((error, response, data) => {
+  if (error || isNull(data)) {
+
+  } else {
+    log("Loaded accounts: ");
+    log(data);
+    updateAccounts(data);
+  }
+});
+setTimeout(() => {
+  setInterval(() => {
+    authedClient.getAccounts((error, response, data) => {
+      if (error || isNull(data)) {
+
+      } else {
+        updateAccounts(data);
+      }
+    })}, 2500);
+}, 1000);
+
+authedClient.getOrders((error, response, data) => {
+  if (error || isNull(data)) {
+
+  } else {
+    log("Loaded orders: ");
+    log(data);
+    loadOrders(data);
+  }
+});
+setInterval(() => {
+  authedClient.getOrders((error, response, data) => {
+    if (error || isNull(data)) {
+
+    } else {
+      if (data.length > 0) {
+        log("Updating orders: ");
+        log(data);
+      }
+      loadOrders(data);
+    }
+  })}, 2500);
+
+getAllFillsIntervalCode = setInterval(() => {
+  authedClient.getFills({'before': latestFillId}, (error, response, data) => {
+    if (error || isNull(data)) {
+
+    } else {
+      processFills(data);
+    }
+  })
+}, 333);
+
+var timer = setInterval(() => {
+  if (!isNull(getAllFillsIntervalCode) || trade_countdown > 0) {
+    log("Loading...");
+    trade_countdown--;
+  } else {
+    trade_countdown = 0;
+    trade_flag = 0;
+    clearInterval(timer);
+    setInterval(() => {
+      if (trade_flag != 0) {
+        sweepOrders();
+      }
+    }, 1000);
+  }
+}, 1000);
+
+
+setInterval(() => {
+  log(". " + trade_flag);
+}, 10000);
+
+setInterval(() => {
+  logBalance();
+}, 120000);
+
+setInterval(() => {
+  var newTradeFlag = findTradeFlag();
+  if (trade_flag != newTradeFlag) {
+    if (cancelAllTimeout[0] == newTradeFlag) {
+      clearTimeout(cancelAllTimeout[1]);
+      cancelAllTimeout[0] = -1;
+      cancelAllTimeout[1] = 0;
+    }
+    cancelAllTimeout[0] = trade_flag;
+    trade_flag = newTradeFlag;
+    cancelAllTimeout[1] = setTimeout(() => {
+      cancelOutstandingOrders(function() {
+        trade_flag = findTradeFlag();
+        startTrades(trade_flag);
+      });}, 1010);
+  }
+}, 200);
+
+
+
 //TODO
 // better detect when orders are filled
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-
-  ws.on('open', function open() {
-    ws.send(JSON.stringify(subMsg));
-    setTimeout(() => {
-      ws.send(JSON.stringify(subMsg));
-    }, 2000);
-  });
-
-  ws.on('message', function incoming(data) {
-    data = JSON.parse(data);
-    if (data['type'] === 'subscriptions') {
-      checkSubscriptions(data["channels"][0]["product_ids"].toString().split(','));
-    } else if (data['type'] === 'snapshot') {
-      updateSnapshot(data, VAR_MAP[data['product_id']]);
-    } else if (data['type'] === 'l2update') {
-      updateChanges(data['changes'], VAR_MAP[data['product_id']]);
-    }
-  });
-  ws.on('error', function incoming(err) {
-    logBig(err);
-  });
   generatePage(req, function(results) { res.render('index', results)}); 
-
-  authedClient.getAccounts((error, response, data) => {
-    if (error || isNull(data)) {
-
-    } else {
-      log("Loaded accounts: ");
-      log(data);
-      updateAccounts(data);
-    }
-  });
-  setTimeout(() => {
-    setInterval(() => {
-      authedClient.getAccounts((error, response, data) => {
-        if (error || isNull(data)) {
-
-        } else {
-          updateAccounts(data);
-        }
-      })}, 2500);
-  }, 1000);
-
-  authedClient.getOrders((error, response, data) => {
-    if (error || isNull(data)) {
-
-    } else {
-      log("Loaded orders: ");
-      log(data);
-      loadOrders(data);
-    }
-  });
-  setInterval(() => {
-    authedClient.getOrders((error, response, data) => {
-      if (error || isNull(data)) {
-
-      } else {
-        if (data.length > 0) {
-          log("Updating orders: ");
-          log(data);
-        }
-        loadOrders(data);
-      }
-    })}, 2500);
-
-  getAllFillsIntervalCode = setInterval(() => {
-    authedClient.getFills({'before': latestFillId}, (error, response, data) => {
-      if (error || isNull(data)) {
-
-      } else {
-        processFills(data);
-      }
-    })
-  }, 333);
-
-  var timer = setInterval(() => {
-    if (!isNull(getAllFillsIntervalCode) || trade_countdown > 0) {
-      log("Loading...");
-      trade_countdown--;
-    } else {
-      trade_countdown = 0;
-      trade_flag = 0;
-      clearInterval(timer);
-    }
-  }, 1000);
-
-  setInterval(() => {
-    log(". " + trade_flag);
-  }, 10000);
-
-  setInterval(() => {
-    logBalance();
-  }, 120000);
-  
 });
 
 
@@ -236,7 +264,6 @@ function onSell(error, response, data, product_id, price, size) {
       break;
     }
   } else {
-    log(data);
     sellOrders[data['id']] = [product_id, price, size];
   }
 }
@@ -280,8 +307,6 @@ function onBuy(error, response, data, product_id, price, size) {
       break;
     }
   } else {
-    log(data);
-    log(data['id']);
     buyOrders[data['id']] = [product_id, price, size];
   }
 }
@@ -463,15 +488,32 @@ function processFills(data) {
   }
 }
 
+function sweepOrders() {
+  // [product_id, price, size]
+  for (var id in sellOrders) {
+    if (VAR_MAP[sellOrders[id][0]].Ask < sellOrders[id][1]) {
+      updateOrders(sellOrders, sellOrders[id][0], sellOrders[id][1], VAR_MAP[sellOrders[id][0]].Ask, false);
+    }
+  }
+
+  for (var id in buyOrders) {
+    if (VAR_MAP[buyOrders[id][0]].Bid > buyOrders[id][1]) {
+      updateOrders(buyOrders, buyOrders[id][0], buyOrders[id][1], VAR_MAP[buyOrders[id][0]].Bid, true);
+    }
+  }
+}
+
 function loadOrders(data) {
   // Memory issues maybe?
   sellOrders = {};
   buyOrders = {};
   for (var i = 0; i < data.length; i++) {
     if(data[i]['side'] === 'sell') {
-      var order = [data[i]['product_id'], 
-      parseFloat(data[i]['price']).toFixed(data[i]['product_id'] === 'ETH-BTC' ? 5 : 2), 
-      parseFloat(data[i]['size']).toFixed(8)];
+      var order = [
+          data[i]['product_id'], 
+          parseFloat(data[i]['price']).toFixed(data[i]['product_id'] === 'ETH-BTC' ? 5 : 2), 
+          parseFloat(data[i]['size']).toFixed(8)
+      ];
       sellOrders[data[i]['id']] = order;
       if (order[1] > VAR_MAP[order[0]].Ask) {
         //remove old order
@@ -480,11 +522,13 @@ function loadOrders(data) {
       }
 
     } else {
-      var order = [data[i]['product_id'], 
-      parseFloat(data[i]['price']).toFixed(data[i]['product_id'] == 'ETH-BTC' ? 5 : 2), 
-      parseFloat(data[i]['size']).toFixed(8)];
+      var order = [
+          data[i]['product_id'], 
+          parseFloat(data[i]['price']).toFixed(data[i]['product_id'] == 'ETH-BTC' ? 5 : 2), 
+          parseFloat(data[i]['size']).toFixed(8)
+      ];
       buyOrders[data[i]['id']] = order;
-      if (order[1] < VAR_MAP[order[0].Bid]) {
+      if (order[1] < VAR_MAP[order[0]].Bid) {
         // remove old order
         // update new order
         updateOrders(buyOrders, data[i]['product_id'], order[1], VAR_MAP[order[0]].Bid, true);
@@ -675,22 +719,6 @@ function generatePage(req, cb) {
   var ltcTrade = shouldTrade(ltcMargin, ltcMarginBack, 'LTC');
   ltcProfit = ((ltcMargin - 1) * 100).toFixed(5);
   ltcProfitBack = ((ltcMarginBack - 1) * 100).toFixed(5);
-
-  var newTradeFlag = findTradeFlag();
-  if (trade_flag != newTradeFlag) {
-    if (cancelAllTimeout[0] == newTradeFlag) {
-      clearTimeout(cancelAllTimeout[1]);
-      cancelAllTimeout[0] = -1;
-      cancelAllTimeout[1] = 0;
-    }
-    cancelAllTimeout[0] = trade_flag;
-    trade_flag = newTradeFlag;
-    cancelAllTimeout[1] = setTimeout(() => {
-      cancelOutstandingOrders(function() {
-        trade_flag = findTradeFlag();
-        startTrades(trade_flag);
-      });}, 1010);
-  }
 
   cb({
     layout: !req.xhr,
